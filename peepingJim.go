@@ -240,7 +240,7 @@ func main() {
 			dstPath = options.output
 		}
 	} else {
-		dstPath = "peepingGO_" + time.Now().Format("2006_01_02_15_04_05")
+		dstPath = "peepingJim_" + time.Now().Format("2006_01_02_15_04_05")
 	}
 	targets := getTargets(options)
 	os.Mkdir(dstPath, 0755)
@@ -250,7 +250,7 @@ func main() {
 	//Making a list of targets to scan
 	db := []map[string]string{}
 	//Report name
-	report := "peepingGo.html"
+	report := "peepingJim.html"
 	outFile := fmt.Sprintf("%s/%s", dstPath, report)
 	fmt.Printf("Loading %d targets\n", len(targets))
 	// capture ctrl+c
