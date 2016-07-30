@@ -5,58 +5,56 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"github.com/b00stfr3ak/nmap"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/lair-framework/go-nmap"
+)
+
+const (
+	veresion = 2.0
+	author   = "James Cook <@b00stfr3ak44>"
 )
 
 //Enumerate Ports to see if they are valid or not and if they are HTTP or HTTPS
-func enumPort(port *nmap.Port) (string, string) {
-	httpPorts := []string{"80", "81", "8000", "8080", "8081", "8082"}
-	httpsPorts := []string{"443", "8443"}
-	// TODO
-	// also check for http or https
-	if port.State.Status == "open" {
+func enumPort(port *nmap.Port) (string, int) {
+	httpPorts := []int{80, 81, 8000, 8080, 8081, 8082}
+	httpsPorts := []int{443, 8443}
+	if port.State.State == "open" {
 		for _, value := range httpsPorts {
-			if value == port.ID {
-				return "https", port.ID
+			if value == port.PortId {
+				return "https", port.PortId
 			}
 		}
 		for _, value := range httpPorts {
-			if value == port.ID {
-				return "http", port.ID
+			if value == port.PortId {
+				return "http", port.PortId
 			}
 		}
 	}
-	return "", ""
+	return "", 0
 }
 
 //parseNmap takes an array of structs from the imported nmap lib and
 //builds a list of targets
-func parseNmap(res []*nmap.ReportHost) []string {
+func parseNmap(res *nmap.NmapRun) []string {
 	targets := []string{}
-	for _, host := range res {
-		for _, port := range host.Ports.Port {
+	for _, host := range res.Hosts {
+		for _, port := range host.Ports {
 			proto, portID := enumPort(&port)
-			if portID != "" {
-				var hostName string
-				if host.Host.Names.Name == "" {
-					hostName = host.Address.Addr
-				} else {
-					hostName = host.Host.Names.Name
-				}
-				url := fmt.Sprintf("%s://%s:%s", proto, hostName, portID)
+			if portID != 0 {
+				url := fmt.Sprintf("%s://%s:%d", proto, host.Addresses[0].Addr, portID)
 				targets = append(targets, url)
 			}
 		}
-
 	}
 	return targets
 }
@@ -69,7 +67,11 @@ func getTargets(options *flagOpts) []string {
 	if options.url != "" {
 		targets = append(targets, options.url)
 	} else if options.xml != "" {
-		res, _ := nmap.Parse(options.xml)
+		data, err := ioutil.ReadFile(options.xml)
+		if err != nil {
+			log.Fatal("Couldn't Read File", err.Error())
+		}
+		res, _ := nmap.Parse(data)
 		targets = parseNmap(res)
 	} else if options.list != "" {
 		file, err := os.Open(options.list)
@@ -85,7 +87,11 @@ func getTargets(options *flagOpts) []string {
 	} else if options.dir != "" {
 		files, _ := filepath.Glob(options.dir + "/*.xml")
 		for _, file := range files {
-			res, _ := nmap.Parse(file)
+			data, err := ioutil.ReadFile(file)
+			if err != nil {
+				log.Fatal("Couldn't Read File", err.Error())
+			}
+			res, _ := nmap.Parse(data)
 			targets = append(targets, parseNmap(res)...)
 		}
 	} else {
@@ -95,7 +101,8 @@ func getTargets(options *flagOpts) []string {
 }
 
 //runPhantom sets up runCommand to run the phantom binary with all the options
-func runPhantom(url, imgPath string, timeout int) string {
+func runPhantom(url, imgPath string, timeout int, wg *sync.WaitGroup) string {
+	defer wg.Done()
 	phantomCMD := fmt.Sprintf("--ignore-ssl-errors=yes capture.js %s %s %d", url, imgPath, timeout*1000)
 	opts := strings.Fields(phantomCMD)
 	return runCommand("./phantomjs", opts)
@@ -171,13 +178,16 @@ func worker(id int, queue chan string, options *flagOpts, dstPath string, db *[]
 		//Making a channel to store curl output to
 		c := make(chan string)
 		go getHeader(target, srcPath, options.timeout, c)
-		runPhantom(target, imgPath, options.timeout)
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go runPhantom(target, imgPath, options.timeout, &wg)
 		//Writing output to a hash map and appending it to an array
 		targetData := make(map[string]string)
 		targetData["url"] = target
 		targetData["imgPath"] = imgName
 		targetData["srcPath"] = srcName
 		targetData["headers"] = <-c
+		wg.Wait()
 		*db = append(*db, targetData)
 	}
 }
@@ -191,7 +201,6 @@ type flagOpts struct {
 	output  string
 	threads int
 	timeout int
-	cores   int
 	verbose int
 }
 
@@ -201,29 +210,14 @@ func flags() *flagOpts {
 	listOpt := flag.String("list", "", "file that contains a list of URLs")
 	dirOpt := flag.String("dir", "", "dir of xml files")
 	urlOpt := flag.String("url", "", "single URL to scan")
-	coreOpt := flag.Int("cores", 1, "Number of Cores to use")
 	threadOpt := flag.Int("threads", 1, "Number of Threads to use")
 	outputOpt := flag.String("output", "", "where to write folder")
 	timeoutOpt := flag.Int("timeout", 8, "time out in seconds")
 	verboseOpt := flag.Int("verbose", 0, "Verbose level 0,1,2")
 	flag.Parse()
 	return &flagOpts{url: *urlOpt, dir: *dirOpt, xml: *xmlOpt, list: *listOpt,
-		output: *outputOpt, cores: *coreOpt, threads: *threadOpt, timeout: *timeoutOpt,
+		output: *outputOpt, threads: *threadOpt, timeout: *timeoutOpt,
 		verbose: *verboseOpt}
-}
-
-//coreCheck takes a number and checks if you have that many cores or not.
-//If you do it sets the max procs to that number
-func coreCheck(cores int) {
-	if cores > runtime.NumCPU() || cores <= 0 {
-		log.Fatal(`You don't have that many cores... you can use up to `,
-			runtime.NumCPU())
-	} else {
-		runtime.GOMAXPROCS(cores)
-		if verbose == 1 {
-			fmt.Println("Using " + string(runtime.GOMAXPROCS(cores)) + " cores")
-		}
-	}
 }
 
 var verbose int
@@ -244,8 +238,6 @@ func main() {
 	}
 	targets := getTargets(options)
 	os.Mkdir(dstPath, 0755)
-	//Checking the number of cores the user wants to use
-	coreCheck(options.cores)
 	verbose = options.verbose
 	//Making a list of targets to scan
 	db := []map[string]string{}
