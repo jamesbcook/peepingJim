@@ -25,7 +25,6 @@ You will need phantomjs in the same directory as peepingJim
 
     ➜  peepingJim  go run peepingJim.go -help
        Usage of peepingJim:
-         -cores=1: Number of Cores to use
          -dir="": dir of xml files
          -list="": file that contains a list of URLs
          -output="": where to write folder
@@ -39,7 +38,6 @@ You will need phantomjs in the same directory as peepingJim
 
     ➜  peepingJim  ./peepingJim.go -help
        Usage of peepingJim:
-         -cores=1: Number of Cores to use
          -dir="": dir of xml files
          -list="": file that contains a list of URLs
          -output="": where to write folder
