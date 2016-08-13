@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -20,25 +22,30 @@ import (
 )
 
 const (
-	veresion = 2.0
+	veresion = 2.1
 	author   = "James Cook <@b00stfr3ak44>"
 )
 
-//Enumerate Ports to see if they are valid or not and if they are HTTP or HTTPS
-func enumPort(port *nmap.Port) (string, int) {
+func httpOrhttps(port int) (string, int) {
 	httpPorts := []int{80, 81, 8000, 8080, 8081, 8082}
 	httpsPorts := []int{443, 8443}
+	for _, value := range httpsPorts {
+		if value == port {
+			return "https", port
+		}
+	}
+	for _, value := range httpPorts {
+		if value == port {
+			return "http", port
+		}
+	}
+	return "", 0
+}
+
+//Enumerate Ports to see if they are valid or not and if they are HTTP or HTTPS
+func enumPort(port *nmap.Port) (string, int) {
 	if port.State.State == "open" {
-		for _, value := range httpsPorts {
-			if value == port.PortId {
-				return "https", port.PortId
-			}
-		}
-		for _, value := range httpPorts {
-			if value == port.PortId {
-				return "http", port.PortId
-			}
-		}
+		httpOrhttps(port.PortId)
 	}
 	return "", 0
 }
@@ -162,7 +169,7 @@ td.head {vertical-align: top;word-wrap: break-word;}
 //Making a regex to later remove :// and : from a URL
 var reg = regexp.MustCompile("(://)|(:)")
 
-func worker(id int, queue chan string, options *flagOpts, dstPath string, db *[]map[string]string) {
+func worker(queue chan string, options *flagOpts, dstPath string, db *[]map[string]string) {
 	for {
 		target := <-queue
 		if target == "" {
@@ -171,6 +178,21 @@ func worker(id int, queue chan string, options *flagOpts, dstPath string, db *[]
 		fmt.Printf("Scanning %s\n", target)
 		//Cleaning URL so we can write to a file
 		targetFixed := reg.ReplaceAllString(target, "")
+		targetFixed = strings.TrimSuffix(targetFixed, "/")
+		if !strings.HasPrefix(target, "http") {
+			_, port, err := net.SplitHostPort(target)
+			if err != nil {
+				target = "http://" + target
+			} else {
+				newPort, err := strconv.Atoi(port)
+				if err != nil {
+					log.Println(err)
+					continue
+				}
+				scheme, _ := httpOrhttps(newPort)
+				target = scheme + "://" + target
+			}
+		}
 		imgName := fmt.Sprintf("%s.png", targetFixed)
 		srcName := fmt.Sprintf("%s.txt", targetFixed)
 		imgPath := fmt.Sprintf("%s/%s", dstPath, imgName)
@@ -259,7 +281,7 @@ func main() {
 	queue := make(chan string)
 	//spawn workers
 	for i := 0; i <= threads; i++ {
-		go worker(i, queue, options, dstPath, &db)
+		go worker(queue, options, dstPath, &db)
 	}
 	//make work
 	for _, target := range targets {
