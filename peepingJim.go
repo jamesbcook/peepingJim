@@ -45,7 +45,7 @@ func httpOrhttps(port int) (string, int) {
 //Enumerate Ports to see if they are valid or not and if they are HTTP or HTTPS
 func enumPort(port *nmap.Port) (string, int) {
 	if port.State.State == "open" {
-		httpOrhttps(port.PortId)
+		return httpOrhttps(port.PortId)
 	}
 	return "", 0
 }
