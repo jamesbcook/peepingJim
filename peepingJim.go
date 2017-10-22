@@ -8,12 +8,12 @@ import (
 	"io/ioutil"
 	"log"
 	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -22,43 +22,54 @@ import (
 )
 
 const (
-	veresion = 2.1
-	author   = "James Cook <@b00stfr3ak44>"
+	veresion = 2.2
+	author   = "James Cook <@_jbcook>"
 )
 
-func httpOrhttps(port int) (string, int) {
-	httpPorts := []int{80, 81, 8000, 8080, 8081, 8082}
-	httpsPorts := []int{443, 8443}
-	for _, value := range httpsPorts {
-		if value == port {
-			return "https", port
-		}
-	}
-	for _, value := range httpPorts {
-		if value == port {
-			return "http", port
-		}
-	}
-	return "", 0
-}
+//Making a regex to later remove :// and : from a URL
+var reg = regexp.MustCompile("(://)|(:)")
+var httpReg = regexp.MustCompile("http")
+var verbose int
 
-//Enumerate Ports to see if they are valid or not and if they are HTTP or HTTPS
-func enumPort(port *nmap.Port) (string, int) {
-	if port.State.State == "open" {
-		return httpOrhttps(port.PortId)
-	}
-	return "", 0
+//flagOpts hold all the possible options a user could pass at the cli
+type flagOpts struct {
+	url     string
+	dir     string
+	xml     string
+	list    string
+	output  string
+	threads int
+	timeout int
+	verbose int
 }
 
 //parseNmap takes an array of structs from the imported nmap lib and
 //builds a list of targets
 func parseNmap(res *nmap.NmapRun) []string {
 	targets := []string{}
+	var serviceName string
 	for _, host := range res.Hosts {
 		for _, port := range host.Ports {
-			proto, portID := enumPort(&port)
-			if portID != 0 {
-				url := fmt.Sprintf("%s://%s:%d", proto, host.Addresses[0].Addr, portID)
+			if port.State.State == "open" && httpReg.MatchString(port.Service.Name) {
+				switch port.Service.Name {
+				case "http":
+					serviceName = "http"
+				case "https":
+					serviceName = "https"
+				case "http-alt":
+					serviceName = "http"
+				case "https-alt":
+					serviceName = "https"
+				case "http-proxy":
+					serviceName = "http"
+				case "wbem-http":
+					serviceName = "http"
+				case "wbem-https":
+					serviceName = "https"
+				case "radan-http":
+					serviceName = "http"
+				}
+				url := fmt.Sprintf("%s://%s:%d", serviceName, host.Addresses[0].Addr, port.PortId)
 				targets = append(targets, url)
 			}
 		}
@@ -166,9 +177,6 @@ td.head {vertical-align: top;word-wrap: break-word;}
 	}
 }
 
-//Making a regex to later remove :// and : from a URL
-var reg = regexp.MustCompile("(://)|(:)")
-
 func worker(queue chan string, options *flagOpts, dstPath string, db *[]map[string]string) {
 	for {
 		target := <-queue
@@ -179,19 +187,19 @@ func worker(queue chan string, options *flagOpts, dstPath string, db *[]map[stri
 		//Cleaning URL so we can write to a file
 		targetFixed := reg.ReplaceAllString(target, "")
 		targetFixed = strings.TrimSuffix(targetFixed, "/")
-		if !strings.HasPrefix(target, "http") {
-			_, port, err := net.SplitHostPort(target)
-			if err != nil {
-				target = "http://" + target
-			} else {
-				newPort, err := strconv.Atoi(port)
-				if err != nil {
-					log.Println(err)
-					continue
-				}
-				scheme, _ := httpOrhttps(newPort)
-				target = scheme + "://" + target
-			}
+		u, err := url.Parse(target)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		host, port, err := net.SplitHostPort(u.Host)
+		if err != nil {
+			host = u.Host
+		}
+		if port != "" {
+			target = u.Scheme + "://" + host + ":" + port
+		} else {
+			target = u.Scheme + "://" + host
 		}
 		imgName := fmt.Sprintf("%s.png", targetFixed)
 		srcName := fmt.Sprintf("%s.txt", targetFixed)
@@ -214,18 +222,6 @@ func worker(queue chan string, options *flagOpts, dstPath string, db *[]map[stri
 	}
 }
 
-//flagOpts hold all the possible options a user could pass at the cli
-type flagOpts struct {
-	url     string
-	dir     string
-	xml     string
-	list    string
-	output  string
-	threads int
-	timeout int
-	verbose int
-}
-
 //flags is a function that builds the flagOpts struct
 func flags() *flagOpts {
 	xmlOpt := flag.String("xml", "", "xml file to parse")
@@ -241,8 +237,6 @@ func flags() *flagOpts {
 		output: *outputOpt, threads: *threadOpt, timeout: *timeoutOpt,
 		verbose: *verboseOpt}
 }
-
-var verbose int
 
 func main() {
 	//Gather all the cli arguments
