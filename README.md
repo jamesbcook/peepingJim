@@ -12,7 +12,7 @@ You will need phantomjs in the same directory as peepingJim
 
 ## Install NMAP Parsing Lib
 
-    go get github.com/b00stfr3ak/nmap
+    go get github.com/lair-framework/go-nmap
 
 ## Build Executable
 
