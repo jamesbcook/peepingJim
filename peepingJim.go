@@ -3,11 +3,14 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"crypto/tls"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net"
+	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"os"
 	"os/exec"
@@ -126,11 +129,57 @@ func runPhantom(url, imgPath string, timeout int, wg *sync.WaitGroup) string {
 	return runCommand("./phantomjs", opts)
 }
 
-//getHeader sets up runCommand to run the phantom binary with all the options
+//getHeader returns the header and body of a page, while following any redirect
 func getHeader(url, srcpath string, timeout int, c chan string) {
-	curlOpts := fmt.Sprintf("-sLkD - %s -o %s --max-time %d", url, srcpath, timeout)
-	opts := strings.Fields(curlOpts)
-	c <- runCommand("curl", opts)
+	var headers []string
+	//var bodies []byte
+	for {
+		client := http.Client{
+			Timeout: time.Duration(timeout) * time.Second,
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+		}
+		resp, err := client.Get(url)
+		if err != nil {
+			log.Println(err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode == 302 || resp.StatusCode == 301 {
+			header, err := httputil.DumpResponse(resp, false)
+			if err != nil {
+				log.Println(err)
+			}
+			headers = append(headers, string(header))
+			/*
+				var bodyBytes bytes.Buffer
+				bodyBytes.ReadFrom(resp.Body)
+				bodies = append(bodies, bodyBytes.Bytes()...)
+			*/
+			url = resp.Header.Get("Location")
+		} else {
+			header, err := httputil.DumpResponse(resp, false)
+			if err != nil {
+				log.Println(err)
+			}
+			headers = append(headers, string(header))
+			var body bytes.Buffer
+			/*
+				bodyBytes.ReadFrom(resp.Body)
+				bodies = append(bodies, bodyBytes.Bytes()...)
+			*/
+			body.ReadFrom(resp.Body)
+			err = ioutil.WriteFile(srcpath, body.Bytes(), 0755)
+			if err != nil {
+				log.Println(err)
+			}
+			break
+		}
+	}
+	c <- strings.Join(headers, "\n")
 }
 
 //runCommand takes a binary and it's ops and runs them
