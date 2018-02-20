@@ -136,8 +136,12 @@ func getHeader(url, srcpath string, timeout int, c chan string) {
 //runCommand takes a binary and it's ops and runs them
 func runCommand(bin string, opts []string) string {
 	cmd := exec.Command(bin, opts...)
-	var out bytes.Buffer
+	var out, err bytes.Buffer
 	cmd.Stdout = &out
+	cmd.Stderr = &err
+	if err.Len() > 0 {
+		fmt.Println(err.String())
+	}
 	cmd.Run()
 	return out.String()
 }
@@ -236,6 +240,15 @@ func flags() *flagOpts {
 	return &flagOpts{url: *urlOpt, dir: *dirOpt, xml: *xmlOpt, list: *listOpt,
 		output: *outputOpt, threads: *threadOpt, timeout: *timeoutOpt,
 		verbose: *verboseOpt}
+}
+
+func init() {
+	requiredFiles := []string{"phantomjs", "capture.js"}
+	for _, file := range requiredFiles {
+		if _, err := os.Stat(file); os.IsNotExist(err) {
+			log.Fatal(file, " was not found in this directory")
+		}
+	}
 }
 
 func main() {
