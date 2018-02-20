@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	veresion = 2.2
+	veresion = 2.3
 	author   = "James Cook <@_jbcook>"
 )
 
