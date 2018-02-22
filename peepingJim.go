@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	version = "2.3.2"
+	version = "2.3.3"
 	author  = "James Cook <@_jbcook>"
 )
 
@@ -132,7 +132,6 @@ func runPhantom(url, imgPath string, timeout int, wg *sync.WaitGroup) string {
 //getHeader returns the header and body of a page, while following any redirect
 func getHeader(url, srcpath string, timeout int, c chan string) {
 	var headers []string
-	//var bodies []byte
 	for {
 		client := http.Client{
 			Timeout: time.Duration(timeout) * time.Second,
@@ -156,11 +155,6 @@ func getHeader(url, srcpath string, timeout int, c chan string) {
 				break
 			}
 			headers = append(headers, string(header))
-			/*
-				var bodyBytes bytes.Buffer
-				bodyBytes.ReadFrom(resp.Body)
-				bodies = append(bodies, bodyBytes.Bytes()...)
-			*/
 			var tmpURL string
 			tmpURL = resp.Header.Get("Location")
 			if tmpURL[0] == '/' {
@@ -176,10 +170,6 @@ func getHeader(url, srcpath string, timeout int, c chan string) {
 			}
 			headers = append(headers, string(header))
 			var body bytes.Buffer
-			/*
-				bodyBytes.ReadFrom(resp.Body)
-				bodies = append(bodies, bodyBytes.Bytes()...)
-			*/
 			body.ReadFrom(resp.Body)
 			err = ioutil.WriteFile(srcpath, body.Bytes(), 0755)
 			if err != nil {
@@ -198,10 +188,10 @@ func runCommand(bin string, opts []string) string {
 	var out, err bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &err
-	if err.Len() > 0 {
-		fmt.Println(err.String())
-	}
 	cmd.Run()
+	if err.Len() > 0 {
+		log.Println(err.String())
+	}
 	return out.String()
 }
 
