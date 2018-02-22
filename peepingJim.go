@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	version = "2.3.1"
+	version = "2.3.2"
 	author  = "James Cook <@_jbcook>"
 )
 
@@ -149,14 +149,12 @@ func getHeader(url, srcpath string, timeout int, c chan string) {
 			break
 		}
 		defer resp.Body.Close()
-		fmt.Println(url, resp.StatusCode)
 		if resp.StatusCode == 302 || resp.StatusCode == 301 {
 			header, err := httputil.DumpResponse(resp, false)
 			if err != nil {
 				log.Println(err)
 				break
 			}
-			fmt.Println(string(header))
 			headers = append(headers, string(header))
 			/*
 				var bodyBytes bytes.Buffer
