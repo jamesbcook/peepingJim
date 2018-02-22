@@ -25,8 +25,8 @@ import (
 )
 
 const (
-	veresion = 2.3
-	author   = "James Cook <@_jbcook>"
+	version = "2.3.1"
+	author  = "James Cook <@_jbcook>"
 )
 
 //Making a regex to later remove :// and : from a URL
@@ -146,24 +146,35 @@ func getHeader(url, srcpath string, timeout int, c chan string) {
 		resp, err := client.Get(url)
 		if err != nil {
 			log.Println(err)
+			break
 		}
 		defer resp.Body.Close()
+		fmt.Println(url, resp.StatusCode)
 		if resp.StatusCode == 302 || resp.StatusCode == 301 {
 			header, err := httputil.DumpResponse(resp, false)
 			if err != nil {
 				log.Println(err)
+				break
 			}
+			fmt.Println(string(header))
 			headers = append(headers, string(header))
 			/*
 				var bodyBytes bytes.Buffer
 				bodyBytes.ReadFrom(resp.Body)
 				bodies = append(bodies, bodyBytes.Bytes()...)
 			*/
-			url = resp.Header.Get("Location")
+			var tmpURL string
+			tmpURL = resp.Header.Get("Location")
+			if tmpURL[0] == '/' {
+				url = strings.TrimSuffix(url, "/") + tmpURL
+			} else {
+				url = tmpURL
+			}
 		} else {
 			header, err := httputil.DumpResponse(resp, false)
 			if err != nil {
 				log.Println(err)
+				break
 			}
 			headers = append(headers, string(header))
 			var body bytes.Buffer
@@ -175,6 +186,7 @@ func getHeader(url, srcpath string, timeout int, c chan string) {
 			err = ioutil.WriteFile(srcpath, body.Bytes(), 0755)
 			if err != nil {
 				log.Println(err)
+				break
 			}
 			break
 		}
