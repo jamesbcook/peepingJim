@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	version = "3.0.0"
+	version = "3.1.0"
 	author  = "James Cook <@_jbcook>"
 )
 
@@ -75,6 +75,7 @@ func main() {
 	app.Threads = options.threads
 	client.Output = dstPath
 	client.TimeOut = options.timeout
+	client.PhantomJS = peepingJim.RunPhantom()
 	os.Mkdir(dstPath, 0755)
 	//Making a list of targets to scan
 	db := []map[string]string{}

@@ -24,9 +24,10 @@ type App struct {
 
 //Client info needed for the worker
 type Client struct {
-	Output  string
-	TimeOut int
-	Sync    sync.RWMutex
+	Output    string
+	TimeOut   int
+	PhantomJS Opts
+	Sync      sync.RWMutex
 }
 
 func init() {
