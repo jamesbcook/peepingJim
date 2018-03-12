@@ -20,30 +20,23 @@ You will need phantomjs in the same directory as peepingJim
 
 ## Examples
 
-
-# Running from source
-
-    ➜  peepingJim  go run peepingJim.go -help
-       Usage of peepingJim:
-         -dir="": dir of xml files
-         -list="": file that contains a list of URLs
-         -output="": where to write folder
-         -threads=1: Number of Threads to use
-         -timeout=8: time out in seconds
-         -url="": single URL to scan
-         -verbose=0: Verbose level 0,1,2
-         -xml="": xml file to parse
-
 # Running from executable
 
-    ➜  peepingJim  ./peepingJim.go -help
-       Usage of peepingJim:
-         -dir="": dir of xml files
-         -list="": file that contains a list of URLs
-         -output="": where to write folder
-         -threads=1: Number of Threads to use
-         -timeout=8: time out in seconds
-         -url="": single URL to scan
-         -verbose=0: Verbose level 0,1,2
-         -xml="": xml file to parse
-
+      ./peepingJim -h
+      Usage of ./peepingJim:
+        -dir string
+              dir of xml files
+        -list string
+              file that contains a list of URLs
+        -output string
+              where to write folder
+        -threads int
+              Number of Threads to use (default 1)
+        -timeout int
+              time out in seconds (default 8)
+        -url string
+              single URL to scan
+        -verbose
+              Verbose
+        -xml string
+              xml file to parse
