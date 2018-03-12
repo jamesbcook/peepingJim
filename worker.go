@@ -15,7 +15,11 @@ func (client *Client) Worker(queue chan string, db *[]map[string]string) {
 		if target == "" {
 			break
 		}
-		fmt.Printf("Scanning %s\n", target)
+		if client.Verbose {
+			fmt.Printf("Scanning %s\n", target)
+		} else {
+			fmt.Printf(".")
+		}
 		//Cleaning URL so we can write to a file
 		targetFixed := reg.ReplaceAllString(target, "")
 		targetFixed = strings.TrimSuffix(targetFixed, "/")

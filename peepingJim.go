@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	version = "3.0.0"
+	version = "3.1.0"
 	author  = "James Cook <@_jbcook>"
 )
 
@@ -19,7 +19,6 @@ var (
 type App struct {
 	InputType string
 	Threads   int
-	Verbose   int
 }
 
 //Client info needed for the worker
@@ -28,6 +27,7 @@ type Client struct {
 	TimeOut   int
 	PhantomJS Opts
 	Sync      sync.RWMutex
+	Verbose   bool
 }
 
 func init() {

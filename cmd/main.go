@@ -25,7 +25,7 @@ type flagOpts struct {
 	output  string
 	threads int
 	timeout int
-	verbose int
+	verbose bool
 }
 
 //flags is a function that builds the flagOpts struct
@@ -37,7 +37,7 @@ func flags() *flagOpts {
 	threadOpt := flag.Int("threads", 1, "Number of Threads to use")
 	outputOpt := flag.String("output", "", "where to write folder")
 	timeoutOpt := flag.Int("timeout", 8, "time out in seconds")
-	verboseOpt := flag.Int("verbose", 0, "Verbose level 0,1,2")
+	verboseOpt := flag.Bool("verbose", false, "Verbose")
 	flag.Parse()
 	return &flagOpts{url: *urlOpt, dir: *dirOpt, xml: *xmlOpt, list: *listOpt,
 		output: *outputOpt, threads: *threadOpt, timeout: *timeoutOpt,
@@ -76,6 +76,7 @@ func main() {
 	client.Output = dstPath
 	client.TimeOut = options.timeout
 	client.PhantomJS = peepingJim.RunPhantom()
+	client.Verbose = options.verbose
 	os.Mkdir(dstPath, 0755)
 	//Making a list of targets to scan
 	db := []map[string]string{}
