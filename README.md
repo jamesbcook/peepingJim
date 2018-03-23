@@ -11,9 +11,9 @@ You will need phantomjs and capture.js in the same directory as peepingJim
 ## Build Executable
 
 * Linux Install
-  * make clean && make linux
+  * make linux
 * OSX Install
-  * make clean && make osx
+  * make osx
 
 ## Examples
 

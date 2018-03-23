@@ -36,7 +36,7 @@ docker: setup captureJS
 	cp $(OUTPUT_DIR)/$(PHANTOMJS)-$(LINUX)/bin/phantomjs $(OUTPUT_DIR)/
 	rm $(OUTPUT_DIR)/$(PHANTOMJS)-$(LINUX).tar.bz2
 	rm -r $(OUTPUT_DIR)/$(PHANTOMJS)-$(LINUX)
-	go build -ldflags '$(AUTHOR) $(VERSION)' -v -o $(OUTPUT_DIR)/peepingJim_linux_amd64 cmd/main.go
+	go build -ldflags '$(AUTHOR) $(VERSION)' -v -o $(OUTPUT_DIR)/peepingJim cmd/main.go
 
 release: linux osx
 
