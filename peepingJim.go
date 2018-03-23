@@ -6,13 +6,12 @@ import (
 	"sync"
 )
 
-const (
-	version = "3.1.0"
-	author  = "James Cook <@_jbcook>"
-)
-
 var (
 	requiredFiles = [2]string{"phantomjs", "capture.js"}
+	//Version of the package
+	Version string
+	//Author of the package
+	Author string
 )
 
 //App settings

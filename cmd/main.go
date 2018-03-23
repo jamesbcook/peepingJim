@@ -11,11 +11,6 @@ import (
 	"github.com/jamesbcook/peepingJim"
 )
 
-const (
-	version = "3.1.0"
-	author  = "James Cook <@_jbcook>"
-)
-
 //flagOpts hold all the possible options a user could pass at the cli
 type flagOpts struct {
 	url     string
@@ -38,7 +33,16 @@ func flags() *flagOpts {
 	outputOpt := flag.String("output", "", "where to write folder")
 	timeoutOpt := flag.Int("timeout", 8, "time out in seconds")
 	verboseOpt := flag.Bool("verbose", false, "Verbose")
+	versionOpt := flag.Bool("version", false, "Print version")
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "peepingJim %v by %s \nUsage:\n", peepingJim.Version, peepingJim.Author)
+		flag.PrintDefaults()
+	}
 	flag.Parse()
+	if *versionOpt {
+		fmt.Println(peepingJim.Version)
+		os.Exit(0)
+	}
 	return &flagOpts{url: *urlOpt, dir: *dirOpt, xml: *xmlOpt, list: *listOpt,
 		output: *outputOpt, threads: *threadOpt, timeout: *timeoutOpt,
 		verbose: *verboseOpt}
