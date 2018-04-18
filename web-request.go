@@ -24,7 +24,12 @@ func getHeader(url, srcpath string, timeout int, c chan string) {
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			},
 		}
-		resp, err := client.Get(url)
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+		req.Header.Set("User-Agent", "peeingJim/4.0.0")
+		resp, err := client.Do(req)
 		if err != nil {
 			log.Println(err)
 			break

@@ -6,7 +6,7 @@ I was having issues with the XML parsing so I wrote this instead
 
 ## Pre-package
 
-You will need phantomjs and capture.js in the same directory as peepingJim
+You will need chrome installed to take screenshots
 
 ## Build Executable
 
@@ -20,7 +20,7 @@ You will need phantomjs and capture.js in the same directory as peepingJim
 ### Running from executable
 
 ```
-peepingJim 3.1.1 by James Cook <@_jbcook>
+peepingJim 4.0.0 by James Cook <@_jbcook>
 Usage:
   -dir string
     	dir of xml files

@@ -79,8 +79,8 @@ func main() {
 	app.Threads = options.threads
 	client.Output = dstPath
 	client.TimeOut = options.timeout
-	client.PhantomJS = peepingJim.RunPhantom()
 	client.Verbose = options.verbose
+	client.Chrome.Path = peepingJim.LocateChrome()
 	os.Mkdir(dstPath, 0755)
 	//Making a list of targets to scan
 	db := []map[string]string{}
@@ -111,6 +111,6 @@ func main() {
 	for n := 0; n <= app.Threads; n++ {
 		queue <- ""
 	}
-	//Bulding the final html file
+	//Building the final html file
 	peepingJim.BuildReport(db, outFile)
 }

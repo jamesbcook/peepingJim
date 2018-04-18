@@ -44,7 +44,9 @@ func (client *Client) Worker(queue chan string, db *[]map[string]string) {
 		//Making a channel to store curl output to
 		c := make(chan string)
 		go getHeader(target, srcPath, client.TimeOut, c)
-		client.PhantomJS(phantomStruct{url: target, imgPath: imgPath, timeOut: client.TimeOut * 1000})
+		if err := client.takeScreenshot(target, imgPath); err != nil {
+			log.Println(err)
+		}
 		//Writing output to a hash map and appending it to an array
 		targetData := make(map[string]string)
 		targetData["url"] = target

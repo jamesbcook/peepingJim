@@ -1,13 +1,10 @@
 package peepingJim
 
 import (
-	"log"
-	"os"
 	"sync"
 )
 
 var (
-	requiredFiles = [2]string{"phantomjs", "capture.js"}
 	//Version of the package
 	Version string
 	//Author of the package
@@ -22,17 +19,13 @@ type App struct {
 
 //Client info needed for the worker
 type Client struct {
-	Output    string
-	TimeOut   int
-	PhantomJS Opts
-	Sync      sync.RWMutex
-	Verbose   bool
+	Output  string
+	TimeOut int
+	Sync    sync.RWMutex
+	Verbose bool
+	Chrome
 }
 
 func init() {
-	for _, file := range requiredFiles {
-		if _, err := os.Stat(file); os.IsNotExist(err) {
-			log.Fatal(file, " was not found in this directory")
-		}
-	}
+	LocateChrome()
 }
