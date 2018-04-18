@@ -1,4 +1,4 @@
-# peepingJim
+# peepingJim [![Docker Build Status](https://img.shields.io/docker/build/b00stfr3ak/peepingjim.svg)](https://hub.docker.com/r/b00stfr3ak/peepingjim/)
 
 A multi-core multi-threaded take on peepingTom from https://bitbucket.org/LaNMaSteR53/peepingtom
 
