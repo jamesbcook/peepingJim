@@ -30,7 +30,7 @@ func getHeader(u *url.URL, srcpath string, timeout int, c chan string) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		req.Header.Set("User-Agent", "peeingJim/4.0.0")
+		req.Header.Set("User-Agent", UserAgent)
 		resp, err := client.Do(req)
 		if err != nil {
 			log.Println(err)

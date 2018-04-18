@@ -18,7 +18,6 @@ import (
 
 const (
 	resolution    = "1200,800"
-	userAgent     = "peeingJim/4.0.0"
 	chromeTimeout = 90
 )
 
@@ -59,7 +58,7 @@ func (client *Client) takeScreenshot(u *url.URL, output string) error {
 	basicArguments := []string{
 		"--headless", "--disable-gpu", "--hide-scrollbars",
 		"--disable-crash-reporter",
-		"--user-agent=" + userAgent,
+		"--user-agent=" + UserAgent,
 		"--window-size=" + resolution, "--screenshot=" + output,
 	}
 	currentUser, err := user.Current()

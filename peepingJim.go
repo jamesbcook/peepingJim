@@ -9,6 +9,8 @@ var (
 	Version string
 	//Author of the package
 	Author string
+	//UserAgent for chrome and header requests
+	UserAgent string
 )
 
 //App settings
