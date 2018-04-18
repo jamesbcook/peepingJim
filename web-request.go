@@ -7,13 +7,15 @@ import (
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
 	"strings"
 	"time"
 )
 
 //getHeader returns the header and body of a page, while following any redirect
-func getHeader(url, srcpath string, timeout int, c chan string) {
+func getHeader(u *url.URL, srcpath string, timeout int, c chan string) {
 	var headers []string
+	targetURL := u.String()
 	for {
 		client := http.Client{
 			Timeout: time.Duration(timeout) * time.Second,
@@ -24,7 +26,7 @@ func getHeader(url, srcpath string, timeout int, c chan string) {
 				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 			},
 		}
-		req, err := http.NewRequest("GET", url, nil)
+		req, err := http.NewRequest("GET", targetURL, nil)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -44,11 +46,7 @@ func getHeader(url, srcpath string, timeout int, c chan string) {
 			headers = append(headers, string(header))
 			var tmpURL string
 			tmpURL = resp.Header.Get("Location")
-			if tmpURL[0] == '/' {
-				url = strings.TrimSuffix(url, "/") + tmpURL
-			} else {
-				url = tmpURL
-			}
+			targetURL = strings.TrimSuffix(tmpURL, "/")
 		} else {
 			header, err := httputil.DumpResponse(resp, false)
 			if err != nil {

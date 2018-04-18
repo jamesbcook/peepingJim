@@ -2,11 +2,17 @@ package peepingJim
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log"
+	"net"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
+	"strconv"
 	"time"
 )
 
@@ -27,6 +33,7 @@ var (
 		"/Applications/Chromium.app/Contents/MacOS/Chromium",
 		"C:/Program Files (x86)/Google/Chrome/Application/chrome.exe",
 	}
+	proxyPort int
 )
 
 //Chrome data struct
@@ -48,7 +55,7 @@ func LocateChrome() string {
 	return ""
 }
 
-func (client *Client) takeScreenshot(url, output string) error {
+func (client *Client) takeScreenshot(u *url.URL, output string) error {
 	basicArguments := []string{
 		"--headless", "--disable-gpu", "--hide-scrollbars",
 		"--disable-crash-reporter",
@@ -62,7 +69,18 @@ func (client *Client) takeScreenshot(url, output string) error {
 	if currentUser.Uid == "0" {
 		basicArguments = append(basicArguments, "--no-sandbox")
 	}
-	basicArguments = append(basicArguments, url)
+	if u.Scheme == "https" {
+		proxySetup(u)
+		proxyURL, err := url.Parse("http://localhost:" + strconv.Itoa(proxyPort) + "/")
+		if err != nil {
+			log.Fatal(err)
+		}
+		proxyURL.Path = u.Path
+		basicArguments = append(basicArguments, "--allow-insecure-localhost")
+		basicArguments = append(basicArguments, proxyURL.String())
+	} else {
+		basicArguments = append(basicArguments, u.String())
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(chromeTimeout*time.Second))
 	defer cancel()
 
@@ -76,4 +94,28 @@ func (client *Client) takeScreenshot(url, output string) error {
 		}
 	}
 	return nil
+}
+
+func proxySetup(u *url.URL) {
+	u.Path = "/"
+	rp := httputil.NewSingleHostReverseProxy(u)
+	rp.Transport = &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		log.Fatal(err)
+	}
+	proxyPort = listener.Addr().(*net.TCPAddr).Port
+	go func() {
+		httpServer := http.NewServeMux()
+		httpServer.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			r.Host = u.Host
+			rp.ServeHTTP(w, r)
+		})
+		if err := http.Serve(listener, httpServer); err != nil {
+			log.Printf("Error serving reverse proxy %v", err)
+			return
+		}
+	}()
 }
